@@ -1,3 +1,4 @@
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
@@ -6,37 +7,23 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class WordPair implements Writable,WritableComparable<WordPair> {
+public class WordPair implements Writable {
 
-    private Text word;
-    private Text neighbor;
+    private IntWritable key;
+    private IntWritable value;
 
-    public WordPair(Text word, Text neighbor) {
-        this.word = word;
-        this.neighbor = neighbor;
+    public WordPair(IntWritable key, IntWritable value) {
+        this.key = key;
+        this.value = value;
     }
 
-    public WordPair(String word, String neighbor) {
-        this(new Text(word),new Text(neighbor));
+    public WordPair(int key, int value) {
+        this(new IntWritable(key), new IntWritable(value));
     }
 
     public WordPair() {
-        this.word = new Text();
-        this.neighbor = new Text();
-    }
-
-    @Override
-    public int compareTo(WordPair other) {                         // A compareTo B
-        int returnVal = this.word.compareTo(other.getWord());      // return -1: A < B
-        if(returnVal != 0){                                        // return 0: A = B
-            return returnVal;                                      // return 1: A > B
-        }
-        if(this.neighbor.toString().equals("*")){
-            return -1;
-        }else if(other.getNeighbor().toString().equals("*")){
-            return 1;
-        }
-        return this.neighbor.compareTo(other.getNeighbor());
+        this.key = new IntWritable();
+        this.value = new IntWritable();
     }
 
     public static WordPair read(DataInput in) throws IOException {
@@ -47,54 +34,54 @@ public class WordPair implements Writable,WritableComparable<WordPair> {
 
     @Override
     public void write(DataOutput out) throws IOException {
-        word.write(out);
-        neighbor.write(out);
+        key.write(out);
+        value.write(out);
     }
 
     @Override
     public void readFields(DataInput in) throws IOException {
-        word.readFields(in);
-        neighbor.readFields(in);
+        key.readFields(in);
+        value.readFields(in);
     }
 
     @Override
     public String toString() {
-        return "{word=["+word+"]"+
-               " neighbor=["+neighbor+"]}";
+        return "{key=["+key+"]"+
+               " value=["+value+"]}";
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    // @Override
+    // public boolean equals(Object o) {
+    //     if (this == o) return true;
+    //     if (o == null || getClass() != o.getClass()) return false;
 
-        WordPair wordPair = (WordPair) o;
+    //     WordPair wordPair = (WordPair) o;
 
-        if (neighbor != null ? !neighbor.equals(wordPair.neighbor) : wordPair.neighbor != null) return false;
-        if (word != null ? !word.equals(wordPair.word) : wordPair.word != null) return false;
+    //     if (neighbor != null ? !neighbor.equals(wordPair.neighbor) : wordPair.neighbor != null) return false;
+    //     if (word != null ? !word.equals(wordPair.word) : wordPair.word != null) return false;
 
-        return true;
+    //     return true;
+    // }
+
+    // @Override
+    // public int hashCode() {
+    //     int result = (word != null) ? word.hashCode() : 0;
+    //     result = 163 * result + ((neighbor != null) ? neighbor.hashCode() : 0);
+    //     return result;
+    // }
+
+    public void setKey(int key){
+        this.key.set(key);
+    }
+    public void setValue(int value){
+        this.value.set(value);
     }
 
-    @Override
-    public int hashCode() {
-        int result = (word != null) ? word.hashCode() : 0;
-        result = 163 * result + ((neighbor != null) ? neighbor.hashCode() : 0);
-        return result;
+    public IntWritable getKey() {
+        return key;
     }
 
-    public void setWord(String word){
-        this.word.set(word);
-    }
-    public void setNeighbor(String neighbor){
-        this.neighbor.set(neighbor);
-    }
-
-    public Text getWord() {
-        return word;
-    }
-
-    public Text getNeighbor() {
-        return neighbor;
+    public IntWritable getValue() {
+        return value;
     }
 }
