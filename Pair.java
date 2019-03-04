@@ -1,12 +1,13 @@
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class Pair implements Writable {
+public class Pair implements Writable, WritableComparable<Pair> {
 
     private Text key;
     private IntWritable value;
@@ -16,8 +17,8 @@ public class Pair implements Writable {
         this.value = value;
     }
 
-    public Pair(Object key, IntWritable value) {
-        this(new Text(key.toString()), value);
+    public Pair(String key, IntWritable value) {
+        this(new Text(key), value);
     }
 
     public Pair() {
@@ -43,30 +44,15 @@ public class Pair implements Writable {
         value.readFields(in);
     }
 
-    // @Override
-    // public String toString() {
-    //     return new String(key+":"+value+";");
-    // }
-
-    // @Override
-    // public boolean equals(Object o) {
-    //     if (this == o) return true;
-    //     if (o == null || getClass() != o.getClass()) return false;
-
-    //     WordPair wordPair = (WordPair) o;
-
-    //     if (neighbor != null ? !neighbor.equals(wordPair.neighbor) : wordPair.neighbor != null) return false;
-    //     if (word != null ? !word.equals(wordPair.word) : wordPair.word != null) return false;
-
-    //     return true;
-    // }
-
-    // @Override
-    // public int hashCode() {
-    //     int result = (word != null) ? word.hashCode() : 0;
-    //     result = 163 * result + ((neighbor != null) ? neighbor.hashCode() : 0);
-    //     return result;
-    // }
+    @Override
+    public int compareTo(Pair other) {                         // A compareTo B
+        int returnVal = this.key.compareTo(other.getKey());      // return -1: A < B
+        if(returnVal != 0){                                        // return 0: A = B
+            return returnVal;                                      // return 1: A > B
+        } else {
+            return this.value.compareTo(other.getValue());
+        }
+    }
 
     public void setKey(Object key){
         this.key = new Text(key.toString());
@@ -75,7 +61,7 @@ public class Pair implements Writable {
         this.value.set(value);
     }
 
-    public Object getKey() {
+    public Text getKey() {
         return key;
     }
 
