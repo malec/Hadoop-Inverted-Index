@@ -1,5 +1,7 @@
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -11,33 +13,41 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;;
 
 public class InvertedIndex {
-	public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable> {
+	public static class TokenizerMapper extends Mapper<Object, Text, Text, Pair> {
 		private final static IntWritable one = new IntWritable(1);
-		private Text word = new Text();
+		private HashMap<Text, IntWritable> hashMap = new HashMap<Text, IntWritable>();
+		private Text docId = new Text();
+
 		public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-			word.set("A-Map-Counter");
-			context.write(word, one);
+			this.docId.set(((FileSplit) context.getInputSplit()).getPath().getName());
 			StringTokenizer itr = new StringTokenizer(value.toString());
 			while (itr.hasMoreTokens()) {
-				word.set(itr.nextToken());
-				context.write(word, one);
+				Text text = new Text(itr.nextToken());
+				IntWritable count = hashMap.get(text);
+				hashMap.put(text, count == null ? one : new IntWritable(count.get() + 1));
 			}
+		}
+
+		public void cleanup(Context context) throws IOException, InterruptedException {
+			for (Map.Entry<Text, IntWritable> word : hashMap.entrySet()) {
+				context.write(word.getKey(), new Pair(docId, word.getValue()));
+			}
+			System.out.println("done mapping ");
 		}
 	}
 
-	public static class IntSumReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
-		private IntWritable result = new IntWritable();
-
-		public void reduce(Text key, Iterable<IntWritable> values, Context context)
-				throws IOException, InterruptedException {
-			int sum = 0;
-			for (IntWritable val : values) {
-				sum += val.get();
+	public static class IndexReducer extends Reducer<Text, Pair, Text, Text> {
+		public void reduce(Text key, Iterable<Pair> values, Context context) throws IOException, InterruptedException {
+			String result = "";
+			for(Pair val : values) {
+				result = result + (val.getKey().toString() + ":" + val.getValue() + ";");
 			}
-			result.set(sum);
-			context.write(key, result);
+			
+			result = result.substring(0, result.length() - 1);
+			context.write(key, new Text(result));
 		}
 	}
 
@@ -51,10 +61,13 @@ public class InvertedIndex {
 		Job job = new Job(conf, "word count");
 		job.setJarByClass(InvertedIndex.class);
 		job.setMapperClass(TokenizerMapper.class);
-		job.setCombinerClass(IntSumReducer.class);
-		job.setReducerClass(IntSumReducer.class);
+		job.setReducerClass(IndexReducer.class);
+
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Pair.class);
+		
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(IntWritable.class);
+		job.setOutputValueClass(Text.class);
 		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
 		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 		System.exit(job.waitForCompletion(true) ? 0 : 1);

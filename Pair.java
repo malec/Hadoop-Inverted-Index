@@ -1,5 +1,6 @@
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.Text;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -7,20 +8,20 @@ import java.io.IOException;
 
 public class Pair implements Writable {
 
-    private Object key;
+    private Text key;
     private IntWritable value;
 
-    public Pair(IntWritable key, IntWritable value) {
+    public Pair(Text key, IntWritable value) {
         this.key = key;
         this.value = value;
     }
 
-    public Pair(int key, int value) {
-        this(new IntWritable(key), new IntWritable(value));
+    public Pair(Object key, IntWritable value) {
+        this(new Text(key.toString()), value);
     }
 
     public Pair() {
-        this.key = new Object();
+        this.key = new Text();
         this.value = new IntWritable();
     }
 
@@ -30,23 +31,22 @@ public class Pair implements Writable {
         return wordPair;
     }
 
-    // @Override
-    // public void write(DataOutput out) throws IOException {
-    //     key.write(out);
-    //     value.write(out);
-    // }
-
-    // @Override
-    // public void readFields(DataInput in) throws IOException {
-    //     key.readFields(in);
-    //     value.readFields(in);
-    // }
+    @Override
+    public void write(DataOutput out) throws IOException {
+        key.write(out);
+        value.write(out);
+    }
 
     @Override
-    public String toString() {
-        return "{key=["+key+"]"+
-               " value=["+value+"]}";
+    public void readFields(DataInput in) throws IOException {
+        key.readFields(in);
+        value.readFields(in);
     }
+
+    // @Override
+    // public String toString() {
+    //     return new String(key+":"+value+";");
+    // }
 
     // @Override
     // public boolean equals(Object o) {
@@ -69,7 +69,7 @@ public class Pair implements Writable {
     // }
 
     public void setKey(Object key){
-        this.key = key;
+        this.key = new Text(key.toString());
     }
     public void setValue(int value){
         this.value.set(value);
