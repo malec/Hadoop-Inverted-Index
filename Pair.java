@@ -1,4 +1,3 @@
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -10,20 +9,20 @@ import java.io.IOException;
 public class Pair implements Writable, WritableComparable<Pair> {
 
     private Text key;
-    private IntWritable value;
+    private Text value;
 
-    public Pair(Text key, IntWritable value) {
+    public Pair(Text key, Text value) {
         this.key = key;
         this.value = value;
     }
 
-    public Pair(String key, IntWritable value) {
+    public Pair(String key, Text value) {
         this(new Text(key), value);
     }
 
     public Pair() {
         this.key = new Text();
-        this.value = new IntWritable();
+        this.value = new Text();
     }
 
     public static Pair read(DataInput in) throws IOException {
@@ -57,7 +56,7 @@ public class Pair implements Writable, WritableComparable<Pair> {
     public void setKey(Object key){
         this.key = new Text(key.toString());
     }
-    public void setValue(int value){
+    public void setValue(Text value){
         this.value.set(value);
     }
 
@@ -65,7 +64,7 @@ public class Pair implements Writable, WritableComparable<Pair> {
         return key;
     }
 
-    public IntWritable getValue() {
+    public Text getValue() {
         return value;
     }
 }
