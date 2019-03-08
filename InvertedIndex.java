@@ -53,7 +53,7 @@ public class InvertedIndex {
 	}
 
 	public static class IIReducer extends Reducer<Pair, IntWritable, Text, Text> {
-		private LinkedHashMap<String, LinkedList<Pair>> hashMap = new LinkedHashMap<String, LinkedList<Pair>>();
+		private LinkedHashMap<String, LinkedList<Tuple>> hashMap = new LinkedHashMap<String, LinkedList<Tuple>>();
 
 		public void reduce(Pair key, Iterable<IntWritable> wordCounts, Context context)
 				throws IOException, InterruptedException {
@@ -63,31 +63,40 @@ public class InvertedIndex {
 			}
 			// System.out.println("word " + key.getKey().toString() + " is " + wordCount + "
 			// in doc " + key.getValue().toString());
-			LinkedList<Pair> list = hashMap.get(key.getKey().toString());
+			LinkedList<Tuple> list = hashMap.get(key.getKey().toString());
 			// System.out.println("list is " + (list == null ? "null" : list.toString()));
 			if (list != null) {
 				// add pair of doc id and count to the list
-				list.add(new Pair(key.getValue(), new Text(String.valueOf(wordCount))));
+				list.add(new Tuple(key.getValue().toString(), wordCount));
 			} else {
-				list = new LinkedList<Pair>();
-				list.add(new Pair(new Text(String.valueOf(key.getValue().toString())), new Text(String.valueOf(wordCount))));
+				list = new LinkedList<Tuple>();
+				list.add(new Tuple(key.getValue().toString(), wordCount));
 				hashMap.put(key.getKey().toString(), list);
 			}
 		}
 
 		public void cleanup(Context context) throws IOException, InterruptedException {
-			for (Map.Entry<String, LinkedList<Pair>> wordEntries : hashMap.entrySet()) {
+			for (Map.Entry<String, LinkedList<Tuple>> wordEntries : hashMap.entrySet()) {
 				String word = wordEntries.getKey();
 				String output = "";
-				for (Pair pair : wordEntries.getValue()) {
+				for (Tuple pair : wordEntries.getValue()) {
 					// System.out.println("word is: " + word + "Pair is " + pair.toString());
-					output += pair.getKey().toString() + ":" + pair.getValue().toString() + ";";
+					output += pair.x + ":" + pair.y + ";";
 				}
 				output = output.substring(0, output.length() - 1);
 				context.write(new Text(word), new Text(output));
 			}
 		}
 	}
+
+	public static class Tuple { 
+		public final String x; 
+		public final int y; 
+		public Tuple(String x, int y) { 
+		  this.x = x; 
+		  this.y = y; 
+		} 
+	  } 
 
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
