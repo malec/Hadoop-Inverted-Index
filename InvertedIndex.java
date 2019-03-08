@@ -53,7 +53,7 @@ public class InvertedIndex {
 	}
 
 	public static class IIReducer extends Reducer<Pair, IntWritable, Text, Text> {
-		private LinkedHashMap<String, LinkedList<Tuple>> hashMap = new LinkedHashMap<String, LinkedList<Tuple>>();
+		private LinkedHashMap<String, LinkedList<Pair>> hashMap = new LinkedHashMap<String, LinkedList<Pair>>();
 
 		public void reduce(Pair key, Iterable<IntWritable> wordCounts, Context context)
 				throws IOException, InterruptedException {
@@ -63,25 +63,25 @@ public class InvertedIndex {
 			}
 			// System.out.println("word " + key.getKey().toString() + " is " + wordCount + "
 			// in doc " + key.getValue().toString());
-			LinkedList<Tuple> list = hashMap.get(key.getKey().toString());
+			LinkedList<Pair> list = hashMap.get(key.getKey());
 			// System.out.println("list is " + (list == null ? "null" : list.toString()));
 			if (list != null) {
 				// add pair of doc id and count to the list
-				list.add(new Tuple(key.getValue().toString(), wordCount));
+				list.add(new Pair(key.getValue(), new Text(String.valueOf(wordCount))));
 			} else {
-				list = new LinkedList<Tuple>();
-				list.add(new Tuple(key.getValue().toString(), wordCount));
+				list = new LinkedList<Pair>();
+				list.add(new Pair(key.getValue(), new Text(String.valueOf(wordCount))));
 				hashMap.put(key.getKey().toString(), list);
 			}
 		}
 
 		public void cleanup(Context context) throws IOException, InterruptedException {
-			for (Map.Entry<String, LinkedList<Tuple>> wordEntries : hashMap.entrySet()) {
+			for (Map.Entry<String, LinkedList<Pair>> wordEntries : hashMap.entrySet()) {
 				String word = wordEntries.getKey();
 				String output = "";
-				for (Tuple pair : wordEntries.getValue()) {
+				for (Pair pair : wordEntries.getValue()) {
 					// System.out.println("word is: " + word + "Pair is " + pair.toString());
-					output += pair.x + ":" + pair.y + ";";
+					output += pair.getKey().toString() + ":" + pair.getValue().toString() + ";";
 				}
 				output = output.substring(0, output.length() - 1);
 				context.write(new Text(word), new Text(output));
