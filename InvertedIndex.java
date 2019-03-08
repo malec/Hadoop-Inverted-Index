@@ -2,6 +2,10 @@ import java.io.IOException;
 import java.util.StringTokenizer;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Iterator;
+import java.util.Arrays;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -23,7 +27,6 @@ public class InvertedIndex {
 		private Text docId = new Text();
 
 		public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-			this.docId.set(((FileSplit) context.getInputSplit()).getPath().getName());
 			StringTokenizer itr = new StringTokenizer(value.toString());
 			while (itr.hasMoreTokens()) {
 				Text text = new Text(itr.nextToken());
@@ -34,42 +37,55 @@ public class InvertedIndex {
 
 		public void cleanup(Context context) throws IOException, InterruptedException {
 			for (Map.Entry<Text, IntWritable> word : hashMap.entrySet()) {
+				Text docId = new Text(((FileSplit) context.getInputSplit()).getPath().getName());
 				context.write(new Pair(word.getKey(), docId), word.getValue());
 			}
-			System.out.println("done mapping ");
 		}
 	}
 
 	public static class IIPartitioner extends Partitioner<Pair, IntWritable> {
+		private final static char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
 		@Override
 		public int getPartition(Pair key, IntWritable value, int numReduceTasks) {
-			// System.out.println("key: " + key.getKey() + ", " + key.getValue() + " val:" +
-			// value);
-			String fileName = key.getValue().toString();
-			int fileNumber = Integer.parseInt(fileName.substring(fileName.length() - 1, fileName.length()));
-			int result = fileNumber % (numReduceTasks + 1);
-			if (fileNumber != result) {
-				System.out.println("Bad Reducer number. File Number != Mapper Number " + fileNumber + " != " + result);
-				return 0;
-			} else {
-				System.out.println("File " + fileName + " goes to " + result);
-				return result;
-			}
+			int hash = Arrays.binarySearch(alphabet, key.getKey().toString().toLowerCase().toCharArray()[0]) * numReduceTasks / alphabet.length;
+			return hash;
 		}
 	}
 
 	public static class IIReducer extends Reducer<Pair, IntWritable, Text, Text> {
-		public void reduce(Iterable<Pair> keys, IntWritable value, Context context) throws IOException, InterruptedException {
-			// <word , file0>, count
-			// <word, file1>, count
-			System.out.println(value);
-			String result = "";
-			for (Pair val : keys) {
-				result = result + (val.getKey().toString() + ":" + val.getValue() + ";");
+		private LinkedHashMap<String, LinkedList<Pair>> hashMap = new LinkedHashMap<String, LinkedList<Pair>>();
+
+		public void reduce(Pair key, Iterable<IntWritable> wordCounts, Context context)
+				throws IOException, InterruptedException {
+			int wordCount = 0;
+			for (IntWritable count : wordCounts) {
+				wordCount += count.get();
 			}
-			
-			result = result.substring(0, result.length() - 1);
-			context.write(new Text(result), new Text(value.toString()));
+			// System.out.println("word " + key.getKey().toString() + " is " + wordCount + "
+			// in doc " + key.getValue().toString());
+			LinkedList<Pair> list = hashMap.get(key.getKey().toString());
+			// System.out.println("list is " + (list == null ? "null" : list.toString()));
+			if (list != null) {
+				// add pair of doc id and count to the list
+				list.add(new Pair(key.getValue(), new Text(String.valueOf(wordCount))));
+			} else {
+				list = new LinkedList<Pair>();
+				list.add(new Pair(new Text(String.valueOf(key.getValue().toString())), new Text(String.valueOf(wordCount))));
+				hashMap.put(key.getKey().toString(), list);
+			}
+		}
+
+		public void cleanup(Context context) throws IOException, InterruptedException {
+			for (Map.Entry<String, LinkedList<Pair>> wordEntries : hashMap.entrySet()) {
+				String word = wordEntries.getKey();
+				String output = "";
+				for (Pair pair : wordEntries.getValue()) {
+					// System.out.println("word is: " + word + "Pair is " + pair.toString());
+					output += pair.getKey().toString() + ":" + pair.getValue().toString() + ";";
+				}
+				output = output.substring(0, output.length() - 1);
+				context.write(new Text(word), new Text(output));
+			}
 		}
 	}
 
