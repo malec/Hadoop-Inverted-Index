@@ -81,7 +81,7 @@ public class InvertedIndex {
 				String output = "";
 				for (Tuple pair : wordEntries.getValue()) {
 					// System.out.println("word is: " + word + "Pair is " + pair.toString());
-					output += pair.x + ":" + pair.y + ";";
+					output += pair.key + ":" + pair.value + ";";
 				}
 				output = output.substring(0, output.length() - 1);
 				context.write(new Text(word), new Text(output));
@@ -90,11 +90,11 @@ public class InvertedIndex {
 	}
 
 	public static class Tuple { 
-		public final String x; 
-		public final int y; 
-		public Tuple(String x, int y) { 
-		  this.x = x; 
-		  this.y = y; 
+		public final String key; 
+		public final int value; 
+		public Tuple(String key, int value) { 
+		  this.key = key; 
+		  this.value = value; 
 		} 
 	  } 
 
