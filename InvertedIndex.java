@@ -87,7 +87,7 @@ public class InvertedIndex {
 		job.setMapOutputValueClass(IntWritable.class);
 		job.setPartitionerClass(IIPartitioner.class);
 		job.setReducerClass(IIReducer.class);
-		job.setNumReduceTasks(4);
+		job.setNumReduceTasks(3);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
