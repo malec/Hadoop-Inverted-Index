@@ -6,27 +6,27 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class Pair implements Writable, WritableComparable<Pair> {
+public class wordpair implements Writable, WritableComparable<wordpair> {
 
     private Text key;
     private Text value;
 
-    public Pair(Text key, Text value) {
+    public wordpair(Text key, Text value) {
         this.key = key;
         this.value = value;
     }
 
-    public Pair(String key, Text value) {
+    public wordpair(String key, Text value) {
         this(new Text(key), value);
     }
 
-    public Pair() {
+    public wordpair() {
         this.key = new Text();
         this.value = new Text();
     }
 
-    public static Pair read(DataInput in) throws IOException {
-        Pair wordPair = new Pair();
+    public static wordpair read(DataInput in) throws IOException {
+        wordpair wordPair = new wordpair();
         wordPair.readFields(in);
         return wordPair;
     }
@@ -44,7 +44,7 @@ public class Pair implements Writable, WritableComparable<Pair> {
     }
 
     @Override
-    public int compareTo(Pair other) {                         // A compareTo B
+    public int compareTo(wordpair other) {                         // A compareTo B
         int returnVal = this.key.compareTo(other.getKey());      // return -1: A < B
         if(returnVal != 0){                                        // return 0: A = B
             return returnVal;                                      // return 1: A > B

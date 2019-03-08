@@ -20,8 +20,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;;
 
-public class InvertedIndex {
-	public static class IIMapper extends Mapper<Object, Text, Pair, IntWritable> {
+public class invertedindex {
+	public static class IIMapper extends Mapper<Object, Text, wordpair, IntWritable> {
 		private final static IntWritable one = new IntWritable(1);
 		private HashMap<Text, IntWritable> hashMap = new HashMap<Text, IntWritable>();
 		private Text docId = new Text();
@@ -38,35 +38,32 @@ public class InvertedIndex {
 		public void cleanup(Context context) throws IOException, InterruptedException {
 			for (Map.Entry<Text, IntWritable> word : hashMap.entrySet()) {
 				Text docId = new Text(((FileSplit) context.getInputSplit()).getPath().getName());
-				context.write(new Pair(word.getKey(), docId), word.getValue());
+				context.write(new wordpair(word.getKey(), docId), word.getValue());
 			}
 		}
 	}
 
-	public static class IIPartitioner extends Partitioner<Pair, IntWritable> {
+	public static class IIPartitioner extends Partitioner<wordpair, IntWritable> {
 		private final static char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
 		@Override
-		public int getPartition(Pair key, IntWritable value, int numReduceTasks) {
+		public int getPartition(wordpair key, IntWritable value, int numReduceTasks) {
 			int hash = Arrays.binarySearch(alphabet, key.getKey().toString().toLowerCase().toCharArray()[0]) * numReduceTasks / alphabet.length;
 			return hash;
 		}
 	}
 
-	public static class IIReducer extends Reducer<Pair, IntWritable, Text, Text> {
+	public static class IIReducer extends Reducer<wordpair, IntWritable, Text, Text> {
 		private LinkedHashMap<String, LinkedList<Tuple>> hashMap = new LinkedHashMap<String, LinkedList<Tuple>>();
 
-		public void reduce(Pair key, Iterable<IntWritable> wordCounts, Context context)
+		public void reduce(wordpair key, Iterable<IntWritable> wordCounts, Context context)
 				throws IOException, InterruptedException {
 			int wordCount = 0;
 			for (IntWritable count : wordCounts) {
 				wordCount += count.get();
 			}
-			// System.out.println("word " + key.getKey().toString() + " is " + wordCount + "
-			// in doc " + key.getValue().toString());
+			// add pair of doc id and count to the word list
 			LinkedList<Tuple> list = hashMap.get(key.getKey().toString());
-			// System.out.println("list is " + (list == null ? "null" : list.toString()));
 			if (list != null) {
-				// add pair of doc id and count to the list
 				list.add(new Tuple(key.getValue().toString(), wordCount));
 			} else {
 				list = new LinkedList<Tuple>();
@@ -80,7 +77,6 @@ public class InvertedIndex {
 				String word = wordEntries.getKey();
 				String output = "";
 				for (Tuple pair : wordEntries.getValue()) {
-					// System.out.println("word is: " + word + "Pair is " + pair.toString());
 					output += pair.key + ":" + pair.value + ";";
 				}
 				output = output.substring(0, output.length() - 1);
@@ -106,9 +102,9 @@ public class InvertedIndex {
 			System.exit(2);
 		}
 		Job job = new Job(conf, "word count");
-		job.setJarByClass(InvertedIndex.class);
+		job.setJarByClass(invertedindex.class);
 		job.setMapperClass(IIMapper.class);
-		job.setMapOutputKeyClass(Pair.class);
+		job.setMapOutputKeyClass(wordpair.class);
 		job.setMapOutputValueClass(IntWritable.class);
 		job.setPartitionerClass(IIPartitioner.class);
 		job.setReducerClass(IIReducer.class);
