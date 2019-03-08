@@ -52,6 +52,10 @@ public class Pair implements Writable, WritableComparable<Pair> {
             return this.value.compareTo(other.getValue());
         }
     }
+    @Override
+    public String toString() {
+        return this.key.toString() + "," + this.value.toString();
+    }
 
     public void setKey(Object key){
         this.key = new Text(key.toString());
